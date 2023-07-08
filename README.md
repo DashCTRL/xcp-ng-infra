@@ -14,8 +14,6 @@ bash -c "$(wget -qO- https://xoa.io/deploy)"
 
 For more information, refer to the [XOA documentation](https://docs.xcp-ng.org/management/manage-at-scale/xo-web-ui/).
 
-Alternatively, you can install Xen Orchestra from source following this [guide](https://ostechnix.com/install-xen-orchestra-appliance-xoa/).
-
 ## Create a Virtual Machine
 
 Once you've set up Xen Orchestra, you can create a VM directly from the web interface.
@@ -46,10 +44,11 @@ Remember, these instructions are based on the web interface provided by Xen Orch
 
 Please note that managing an XCP-ng infrastructure requires proper knowledge and understanding of virtualization concepts. Always ensure you've backed up your data and understood the steps you're performing.
 
-show the command in local console
+## Local Console Commands
+
 For operating on XCP-ng via the local console, you'll primarily use the `xe` command line interface. Below are the simplified commands for creating a VM and managing backups:
 
-## Create a Virtual Machine
+### Create a Virtual Machine
 
 The following is a basic example of creating a VM. First, get the UUID of the template you want to use:
 
@@ -65,7 +64,7 @@ xe vm-install template=<template_uuid> new-name-label=<vm_name>
 
 You'll need to replace `<template_uuid>` with the UUID from the previous step, and `<vm_name>` with the name you want for your VM.
 
-## VM Backup
+### VM Backup
 
 For backing up a VM, there isn't a single `xe` command. However, you can use snapshot functionality as a basic form of backup. Below is an example of how to create and export a snapshot, which serves as a simple backup:
 
@@ -94,5 +93,3 @@ xe template-export template-uuid=<snapshot_uuid> filename=<backup_filename>
 Replace `<snapshot_uuid>` with the UUID of the snapshot, and `<backup_filename>` with the desired name of your backup file. This will create a `.xva` file that serves as your backup.
 
 Remember to check the XCP-ng documentation for details about managing your VMs and backups. Always test your backup procedure and ensure that you can restore from your backups before implementing it in a production environment.
-
-make nice wiki and add step to create vm

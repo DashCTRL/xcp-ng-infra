@@ -92,4 +92,4 @@ xe template-export template-uuid=<snapshot_uuid> filename=<backup_filename>
 
 Replace `<snapshot_uuid>` with the UUID of the snapshot, and `<backup_filename>` with the desired name of your backup file. This will create a `.xva` file that serves as your backup.
 
-Remember to check the XCP-ng documentation for details about managing your VMs and backups. Always test your backup procedure and ensure that you can restore from your backups before implementing it in a production environment.
+xe vm-list params=name-label,networks | grep -v "^$"

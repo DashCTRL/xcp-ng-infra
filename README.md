@@ -1,6 +1,6 @@
-# XCP-ng Infrastructure
+# XCP-ng Infrastructure: A Comprehensive Guide
 
-XCP-ng is an open-source hypervisor based on XenServer. It can be managed with its partner tool, Xen Orchestra (XO), providing a web interface for virtual machine management, backups, and more.
+XCP-ng is an open-source hypervisor based on XenServer. It can be managed with its partner tool, Xen Orchestra (XO), providing a web interface for virtual machine management, backups, and more. This guide will walk you through the process of setting up XCP-ng, adding an ISO image storage repository, creating a new virtual machine, and managing your infrastructure.
 
 ## Installation
 
@@ -14,35 +14,98 @@ bash -c "$(wget -qO- https://xoa.io/deploy)"
 
 For more information, refer to the [XOA documentation](https://docs.xcp-ng.org/management/manage-at-scale/xo-web-ui/).
 
-## Create a Virtual Machine
+## Adding ISO Image Storage Repository
 
-Once you've set up Xen Orchestra, you can create a VM directly from the web interface.
+1. **Access XCP-ng via SSH**
 
-1. Click on the `New` button in the VM section.
-2. Select the template for your VM.
-3. Fill in the VM details, such as name, description, CPUs, and memory.
-4. Choose the storage repository and network settings.
-5. Click on `Create`.
+   ```bash
+   ssh root@xcp-ng-server
+   ```
 
-The VM will be created and will appear in the VM section.
+2. **Create a Store Directory**
 
-## VM Backup
+   ```bash
+   mkdir /var/opt/ISO_IMAGES
+   ```
 
-Xen Orchestra also provides a simple method for backing up your VMs.
+   You can then copy your ISO images to `/var/opt/ISO_IMAGES` or download them directly with the `wget` command.
 
-1. Go to the `Backup` section.
-2. Click on `New`.
-3. Select the type of backup you want to create (disaster recovery, rolling snapshot, backup).
-4. Choose the VM you want to backup.
-5. Select the target storage repository for the backup.
-6. Set a schedule for automatic backups (optional).
-7. Click on `Create`.
+   ```bash
+   cd /var/opt/ISO_IMAGES
+   wget http://path-to-your-iso-image.iso
+   ```
 
-Your backup will be scheduled according to the settings you've chosen.
+3. **Create Storage Repository**
 
-Remember, these instructions are based on the web interface provided by Xen Orchestra, which could change over time. Always refer to the latest official documentation for the most accurate information.
+   ```bash
+   xe sr-create name-label=ISO_IMAGES_LOCAL type=iso device-config:location=/var/opt/ISO_IMAGES device-config:legacy_mode=true content-type=iso
+   ```
 
-Please note that managing an XCP-ng infrastructure requires proper knowledge and understanding of virtualization concepts. Always ensure you've backed up your data and understood the steps you're performing.
+   You can list your XCP-ng storage repositories by running:
+
+   ```bash
+   xe sr-list
+   ```
+
+## Creating a New Virtual Machine
+
+1. **Deploy VM Template and Gather Information**
+
+   Search XCP-ng's database for a template name. In this case, we are looking for Ubuntu 16.04:
+
+   ```bash
+   xe template-list | grep name-label | grep -i 16.04
+   ```
+
+   Install a new virtual machine using the above template name:
+
+   ```bash
+   xe vm-install template="Ubuntu Xenial Xerus 16.04" new-name-label="Ubuntu 16.04.1 Desktop amd64"
+   ```
+
+   Save the output UUID and new VM name into a shell variable for later use.
+
+   ```bash
+   UUID=your-vm-uuid
+   NAME="Ubuntu 16.04.1 Desktop amd64"
+   ```
+
+2. **Configure Virtual Machine**
+
+   Attach an ISO image to the new VM device and make the VM boot from the ISO:
+
+   ```bash
+   xe vm-cd-add uuid=$UUID  cd-name=your-iso-image.iso device=1
+   xe vm-param-set HVM-boot-policy="BIOS order" uuid=$UUID
+   ```
+
+   Create a network interface:
+
+   ```bash
+   xe vif-create vm-uuid=$UUID network-uuid=your-network-uuid device=0
+   ```
+
+   Specify the amount of RAM to be used by this VM:
+
+   ```bash
+   xe vm-memory-limits-set dynamic-max=4000MiB dynamic-min=512MiB static-max=4000MiB static-min=512MiB uuid=$UUID
+   ```
+
+   Update the size of your virtual disk:
+
+   ```bash
+   xe vdi-resize uuid=your-vdi-uuid disk-size=15GiB
+   ```
+
+3. **Start Virtual Machine**
+
+   Now you are ready to start your new VM:
+
+   ```bash
+   xe vm-start uuid=$UUID
+   ```
+
+   At this stage, you can use a VNC client to connect to your new VM and perform the actual OS installation.
 
 ## Local Console Commands
 
@@ -84,7 +147,9 @@ xe template-param-set is-a-template=true ha-always-run=false uuid=<snapshot_uuid
 
 Replace `<snapshot_uuid>` with the UUID you received from the snapshot creation command.
 
-Finally, you can export the template to a file:
+Finally,
+
+you can export the template to a file:
 
 ```bash
 xe template-export template-uuid=<snapshot_uuid> filename=<backup_filename>
@@ -92,4 +157,10 @@ xe template-export template-uuid=<snapshot_uuid> filename=<backup_filename>
 
 Replace `<snapshot_uuid>` with the UUID of the snapshot, and `<backup_filename>` with the desired name of your backup file. This will create a `.xva` file that serves as your backup.
 
+## Getting VM IP Address
+
+To get the IP address of a VM running on your XenServer, execute the following command:
+
+```bash
 xe vm-list params=name-label,networks | grep -v "^$"
+```
